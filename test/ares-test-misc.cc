@@ -459,6 +459,20 @@ TEST_F(LibraryTest, CreateRootQuery) {
   EXPECT_EQ(expected, actual);
 }
 
+static void Callback(void *arg, int status, int timeouts,
+                     unsigned char* answer_buf, int answer_len) {
+  EXPECT_EQ(ARES_ECANCELLED, status);
+  EXPECT_EQ(0, timeouts);
+  EXPECT_EQ(0, answer_len);
+}
+
+TEST_F(DefaultChannelTest, CancelQuery) {
+  struct query *query;
+
+  query = ares_query_2(channel_, "www.google.com.", ns_c_in, ns_t_a, Callback, NULL);
+  ares_cancel_query(query);
+}
+
 TEST_F(LibraryTest, Version) {
   // Assume linked to same version
   EXPECT_EQ(std::string(ARES_VERSION_STR),

@@ -272,6 +272,8 @@ struct ares_options {
   int ednspsz;
 };
 
+struct query;
+
 struct hostent;
 struct timeval;
 struct sockaddr;
@@ -342,6 +344,8 @@ CARES_EXTERN void ares_destroy(ares_channel channel);
 
 CARES_EXTERN void ares_cancel(ares_channel channel);
 
+CARES_EXTERN void ares_cancel_query(struct query *query);
+
 /* These next 3 configure local binding for the out-going socket
  * connection.  Use these to specify source IP and/or network device
  * on multi-homed systems.
@@ -394,7 +398,20 @@ CARES_EXTERN void ares_send(ares_channel channel,
                             ares_callback callback,
                             void *arg);
 
+CARES_EXTERN struct query *ares_send_2(ares_channel channel,
+                            const unsigned char *qbuf,
+                            int qlen,
+                            ares_callback callback,
+                            void *arg);
+
 CARES_EXTERN void ares_query(ares_channel channel,
+                             const char *name,
+                             int dnsclass,
+                             int type,
+                             ares_callback callback,
+                             void *arg);
+
+CARES_EXTERN struct query *ares_query_2(ares_channel channel,
                              const char *name,
                              int dnsclass,
                              int type,

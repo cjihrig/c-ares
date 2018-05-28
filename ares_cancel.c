@@ -18,6 +18,15 @@
 #include "ares.h"
 #include "ares_private.h"
 
+void ares_cancel_query(struct query *query)
+{
+  if (query != NULL)
+  {
+    query->callback(query->arg, ARES_ECANCELLED, 0, NULL, 0);
+    ares__free_query(query);
+  }
+}
+
 /*
  * ares_cancel() cancels all ongoing requests/resolves that might be going on
  * on the given channel. It does NOT kill the channel, use ares_destroy() for
@@ -48,8 +57,7 @@ void ares_cancel(ares_channel channel)
     {
       query = list_node->data;
       list_node = list_node->next;  /* since we're deleting the query */
-      query->callback(query->arg, ARES_ECANCELLED, 0, NULL, 0);
-      ares__free_query(query);
+      ares_cancel_query(query);
     }
   }
   if (!(channel->flags & ARES_FLAG_STAYOPEN) && ares__is_list_empty(&(channel->all_queries)))

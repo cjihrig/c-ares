@@ -144,6 +144,46 @@ void ares_query(ares_channel channel, const char *name, int dnsclass,
   ares_free_string(qbuf);
 }
 
+struct query *ares_query_2(ares_channel channel, const char *name, int dnsclass,
+                  int type, ares_callback callback, void *arg)
+{
+  struct qquery *qquery;
+  unsigned char *qbuf;
+  int qlen, rd, status;
+  unsigned short id;
+  struct query *query;
+
+  /* Compose the query. */
+  id = channel->next_id;
+  rd = !(channel->flags & ARES_FLAG_NORECURSE);
+  status = ares_create_query(name, dnsclass, type, id, rd, &qbuf,
+              &qlen, (channel->flags & ARES_FLAG_EDNS) ? channel->ednspsz : 0);
+  if (status != ARES_SUCCESS)
+    {
+      if (qbuf != NULL) ares_free(qbuf);
+      callback(arg, status, 0, NULL, 0);
+      return NULL;
+    }
+
+  channel->next_id = generate_unique_id(channel);
+
+  /* Allocate and fill in the query structure. */
+  qquery = ares_malloc(sizeof(struct qquery));
+  if (!qquery)
+    {
+      ares_free_string(qbuf);
+      callback(arg, ARES_ENOMEM, 0, NULL, 0);
+      return NULL;
+    }
+  qquery->callback = callback;
+  qquery->arg = arg;
+
+  /* Send it off.  qcallback will be called when we get an answer. */
+  query = ares_send_2(channel, qbuf, qlen, qcallback, qquery);
+  ares_free_string(qbuf);
+  return query;
+}
+
 static void qcallback(void *arg, int status, int timeouts, unsigned char *abuf, int alen)
 {
   struct qquery *qquery = (struct qquery *) arg;
